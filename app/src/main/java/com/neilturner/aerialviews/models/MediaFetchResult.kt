@@ -10,6 +10,4 @@ data class MediaFetchResult(
 
 enum class LoadingStatus {
     LOADING,
-    BUILDING,
-    RESUMING,
 }

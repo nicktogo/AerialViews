@@ -6,7 +6,6 @@ plugins {
     alias(libs.plugins.google.services)
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.ksp)
     alias(libs.plugins.android.junit5)
     alias(libs.plugins.firebase.crashlytics)
     alias(libs.plugins.firebase.perf)
@@ -165,10 +164,6 @@ android {
     }
 }
 
-ksp {
-    arg("room.schemaLocation", "$projectDir/schemas")
-}
-
 dependencies {
     // Support all favors except F-Droid
     val firebaseFlavors = listOf(
@@ -187,8 +182,7 @@ dependencies {
     implementation(libs.bundles.retrofit)
 
     implementation(libs.bundles.ktor)
-    implementation(libs.bundles.room)
-    ksp(libs.room.compiler)
+
     implementation(libs.bundles.exoplayer)
     implementation(libs.media3.container)
     implementation(libs.sardine.android)

@@ -4,8 +4,7 @@
     <string name="app_name" translatable="false">Aerial Views</string>
     <string name="plugin_uuid" translatable="false">163adf9b-34bb-43df-915c-e8fe4a020bc2</string>
     <string name="loading_title">Loading…</string>
-    <string name="loading_building">Building playlist…</string>
-    <string name="loading_resuming">Resuming playlist…</string>
+
     <string name="loading_error">No videos or photos found, please check your settings</string>
 
     <!-- Projectivy Integration -->
@@ -29,7 +28,7 @@
     <string name="dialog_error_search_message">Failed to search for location: %1$s</string>
 
     <!-- All Categories -->
-    <string name="category_playlist_cache">Cache</string>
+
     <string name="category_actions">Actions</string>
     <string name="category_advanced">Advanced</string>
     <string name="category_media">Media</string>
@@ -386,8 +385,7 @@
     <string name="settings_playlist_title">Playlist</string>
     <string name="settings_playlist_summary">Change volume, mute videos, shuffle, video length, looping, etc</string>
 
-    <string name="settings_cache_title">Caching</string>
-    <string name="settings_cache_summary">Configure playlist caching options</string>
+
 
     <string name="settings_dpad_title">D-Pad/Remote, Tap &amp; Swipe Gestures</string>
     <string name="settings_dpad_summary">Customise actions for your d-pad remote or gestures on your phone screen</string>
@@ -716,28 +714,7 @@
     <string name="location_error_invalid_coordinates">Please enter valid coordinates. Latitude must be between -90 and 90, longitude between -180 and 180.</string>
     <string name="location_error_format">Please enter coordinates in the format: latitude,longitude (e.g., 40.7128,-74.0060)</string>
 
-    <!-- Main / Settings / Cache -->
-    <string name="playlist_cache_enable_summary">Save the playlist so you can resume where you left off across sessions</string>
-    <string name="playlist_cache_enable_title">Enable playlist cache</string>
 
-    <string name="playlist_cache_interval_title">Refresh interval</string>
-    <string name="playlist_cache_clear_title">Clear cache now</string>
-    <string name="playlist_cache_clear_summary">Forces a new playlist to be built on next start</string>
-
-    <string name="playlist_cache_status_title">Cache Status</string>
-    <string name="playlist_cache_status_active">%1$d media items, %2$d music tracks,</string>
-    <string name="playlist_cache_status_empty">No cache data</string>
-    <string name="playlist_cache_status_unknown">Unknown</string>
-    <string name="playlist_cache_expires">Expires:</string>
-    <string name="playlist_cache_expired">(Expired)</string>
-    <string name="playlist_cache_status_index">position: %1$d</string>
-    <string name="playlist_cache_status_expiry_d">%1$d day(s)</string>
-    <string name="playlist_cache_status_expiry_h">%1$d hour(s)</string>
-    <string name="playlist_cache_status_expiry_m">%1$d minute(s)</string>
-    <string name="playlist_cache_status_expiry_d_h">%1$d day(s), %2$d hour(s)</string>
-    <string name="playlist_cache_status_expiry_h_m">%1$d hour(s), %2$d minute(s)</string>
-    <string name="playlist_cache_cleared">Cache cleared</string>
-    <string name="playlist_cache_clear_confirmation">Are you sure you want to clear the playlist cache?</string>
 
     <!-- Main / Settings / D-Pad/Remote -->
     <string name="dpad_button_press_title">D-Pad or Button Press</string>

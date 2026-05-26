@@ -52,7 +52,6 @@ class MediaService(
         val currentTimePeriod: String,
         val playlistTimeOfDayDayIncludes: Set<String>,
         val playlistTimeOfDayNightIncludes: Set<String>,
-        val playlistCache: Boolean,
         val shuffleVideos: Boolean,
         val shuffleMusic: Boolean,
         val repeatMusic: Boolean,
@@ -80,7 +79,6 @@ class MediaService(
                     if (autoTimeOfDay) add(currentTimePeriod)
                     add(playlistTimeOfDayDayIncludes.sorted().joinToString(","))
                     add(playlistTimeOfDayNightIncludes.sorted().joinToString(","))
-                    add(playlistCache.toString())
                     add(shuffleVideos.toString())
                     add(shuffleMusic.toString())
                     add(repeatMusic.toString())
@@ -110,7 +108,6 @@ class MediaService(
                     currentTimePeriod = if (GeneralPrefs.autoTimeOfDay) TimeOfDayHelper.getCurrentTimePeriod().name else "",
                     playlistTimeOfDayDayIncludes = GeneralPrefs.playlistTimeOfDayDayIncludes,
                     playlistTimeOfDayNightIncludes = GeneralPrefs.playlistTimeOfDayNightIncludes,
-                    playlistCache = GeneralPrefs.playlistCache,
                     shuffleVideos = GeneralPrefs.shuffleVideos,
                     shuffleMusic = MusicPrefs.shuffle,
                     repeatMusic = MusicPrefs.repeat,
@@ -150,33 +147,7 @@ class MediaService(
 
     suspend fun fetchMedia(onStatus: (status: LoadingStatus) -> Unit = {}): MediaFetchResult =
         withContext(Dispatchers.IO) {
-            val settingsHash = config.buildHash()
-            val cacheRepo =
-                if (config.playlistCache) {
-                    com.neilturner.aerialviews.data
-                        .PlaylistCacheRepository(context)
-                } else {
-                    null
-                }
-
-            if (config.playlistCache) {
-                if (cacheRepo != null && cacheRepo.isCacheValid(settingsHash)) {
-                    val cached = cacheRepo.getCachedPlaylist()
-                    if (cached != null) {
-                        onStatus(LoadingStatus.RESUMING)
-                        Timber.i("MediaService: USING CACHED PLAYLIST")
-                        return@withContext cached
-                    } else {
-                        Timber.w("MediaService: Cache reported valid but failed to load")
-                    }
-                } else {
-                    Timber.i("MediaService: Cache INVALID or missing, fetching fresh items")
-                }
-                onStatus(LoadingStatus.BUILDING)
-            } else {
-                Timber.i("MediaService: Cache DISABLED, fetching fresh items")
-                onStatus(LoadingStatus.LOADING)
-            }
+            onStatus(LoadingStatus.LOADING)
 
             val (media, tracks) = buildProviderContent(providers)
 
@@ -287,24 +258,7 @@ class MediaService(
 
             Timber.i("Total media items: ${filteredMedia.size}")
 
-            if (config.playlistCache && cacheRepo != null) {
-                // Cache enabled: save to DB, return windowed playlist that streams from DB
-                cacheRepo.cachePlaylist(
-                    media = filteredMedia,
-                    musicPlaylist = musicPlaylist,
-                    settingsHash = settingsHash,
-                    shuffleEnabled = config.shuffleVideos,
-                )
-
-                val cachedResult = cacheRepo.getCachedPlaylist()
-                if (cachedResult != null) {
-                    Timber.i("MediaService: Fresh playlist cached and loaded from DB (${filteredMedia.size} items)")
-                    return@withContext cachedResult
-                }
-                Timber.w("MediaService: Failed to read back cached playlist, falling back to in-memory")
-            } else {
-                Timber.i("MediaService: Cache disabled, using full in-memory playlist (${filteredMedia.size} items)")
-            }
+            Timber.i("MediaService: Using full in-memory playlist (${filteredMedia.size} items)")
 
             // Cache disabled or cache read-back failed: all items in memory, no DB
             return@withContext MediaFetchResult(

@@ -12,7 +12,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.core.view.isVisible
 import com.neilturner.aerialviews.R
-import com.neilturner.aerialviews.data.PlaylistCacheRepository
 import com.neilturner.aerialviews.databinding.AerialActivityBinding
 import com.neilturner.aerialviews.databinding.ImageViewBinding
 import com.neilturner.aerialviews.databinding.OverlayViewBinding
@@ -102,7 +101,6 @@ class ScreenController(
     private var sleepTimerJob: Job? = null
     private val metadataJobs = mutableMapOf<OverlayType, Job>()
     private var currentMedia: AerialMedia? = null
-    private val cacheRepository = PlaylistCacheRepository(context)
 
     private val videoViewBinding: VideoViewBinding
     private val imageViewBinding: ImageViewBinding
@@ -254,16 +252,10 @@ class ScreenController(
                     }
             }
 
-            // Build playlist and start screensaver
             val mediaResult =
                 MediaService(context).fetchMedia { status ->
                     mainScope.launch {
-                        loadingText.text =
-                            when (status) {
-                                LoadingStatus.RESUMING -> resources.getString(R.string.loading_resuming)
-                                LoadingStatus.BUILDING -> resources.getString(R.string.loading_building)
-                                LoadingStatus.LOADING -> resources.getString(R.string.loading_title)
-                            }
+                        loadingText.text = resources.getString(R.string.loading_title)
                         loadingSpinner.visibility = View.VISIBLE
                     }
                 }
@@ -631,37 +623,15 @@ class ScreenController(
     }
 
     private fun savePlaybackPosition() {
-        if (this::playlist.isInitialized && GeneralPrefs.playlistCache) {
-            mainScope.launch {
-                cacheRepository.saveMediaPosition(playlist.currentPosition)
-            }
-        }
     }
 
     private fun saveMusicTrackPosition() {
-        if (GeneralPrefs.playlistCache) {
-            mainScope.launch {
-                musicPlayer?.let {
-                    cacheRepository.saveMusicTrackIndex(it.getCurrentTrackIndex())
-                }
-            }
-        }
     }
 
     fun stop() {
         if (isStopped) return
         isStopped = true
 
-        if (this::playlist.isInitialized) {
-            if (GeneralPrefs.playlistCache) {
-                runBlocking(Dispatchers.IO) {
-                    cacheRepository.saveMediaPosition(playlist.currentPosition)
-                    musicPlayer?.let {
-                        cacheRepository.saveMusicTrackIndex(it.getCurrentTrackIndex())
-                    }
-                }
-            }
-        }
         RefreshRateHelper.restoreOriginalMode(context)
         overlayEventBridge.stop()
         // Remove video view from parent to break context reference chain

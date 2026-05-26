@@ -18,11 +18,6 @@
             app:fragment="com.neilturner.aerialviews.ui.settings.PlaylistFragment"/>
 
         <Preference
-            app:title="@string/settings_cache_title"
-            app:summary="@string/settings_cache_summary"
-            app:fragment="com.neilturner.aerialviews.ui.settings.CacheFragment"/>
-
-        <Preference
             app:title="@string/settings_dpad_title"
             app:summary="@string/settings_dpad_summary"
             app:fragment="com.neilturner.aerialviews.ui.settings.DpadRemoteFragment"/>
