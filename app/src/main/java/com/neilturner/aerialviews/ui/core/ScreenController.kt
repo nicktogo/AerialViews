@@ -108,8 +108,6 @@ class ScreenController(
     private val loadingView: View
     private val overlayView: View
     private var loadingText: TextView
-    private var loadingSpinner: View
-    private var loadingContainer: View
     private var videoPlayer: VideoPlayerView
     private var imagePlayer: ImagePlayerView
     private val brightnessView: View
@@ -139,8 +137,6 @@ class ScreenController(
         loadingView = binding.loadingView.root
         loadingView.setBackgroundColor(backgroundLoading)
         loadingText = binding.loadingView.loadingText
-        loadingSpinner = binding.loadingView.loadingSpinner
-        loadingContainer = binding.loadingView.loadingContainer
 
         overlayViewBinding = binding.overlayView
         overlayView = overlayViewBinding.root
@@ -187,7 +183,7 @@ class ScreenController(
                 typeface = FontHelper.getTypeface(context, GeneralPrefs.fontTypeface, GeneralPrefs.loadingTextWeight)
             }
         } else {
-            loadingContainer.visibility = View.INVISIBLE
+            loadingText.visibility = View.INVISIBLE
         }
 
         // Setup overlays and set initial positions
@@ -252,13 +248,7 @@ class ScreenController(
                     }
             }
 
-            val mediaResult =
-                MediaService(context).fetchMedia { status ->
-                    mainScope.launch {
-                        loadingText.text = resources.getString(R.string.loading_title)
-                        loadingSpinner.visibility = View.VISIBLE
-                    }
-                }
+            val mediaResult = MediaService(context).fetchMedia()
             playlist = mediaResult.mediaPlaylist
             if (playlist.size > 0) {
                 Timber.i("Playlist size: ${playlist.size}")
@@ -400,12 +390,12 @@ class ScreenController(
 
     private fun fadeOutLoadingText() {
         // Fade out container (text + spinner)
-        loadingContainer
+        loadingText
             .animate()
             .alpha(0f)
             .setDuration(LOADING_FADE_OUT)
             .withEndAction {
-                loadingContainer.visibility = View.GONE
+                loadingText.visibility = TextView.GONE
             }.start()
     }
 
@@ -415,7 +405,7 @@ class ScreenController(
         val overlayDelay = (autoHideOverlayDelay * 1000) + mediaFadeIn
 
         // If first video (ie. screensaver startup), fade out 'loading...' text/spinner
-        if (loadingContainer.isVisible) {
+        if (loadingText.isVisible) {
             fadeOutLoadingText()
             startDelay = LOADING_DELAY
         }
@@ -523,7 +513,6 @@ class ScreenController(
 
     private fun showLoadingError() {
         loadingText.text = resources.getString(R.string.loading_error)
-        loadingSpinner.visibility = View.GONE
     }
 
     private fun hideOverlays(delay: Long = 0L) {
