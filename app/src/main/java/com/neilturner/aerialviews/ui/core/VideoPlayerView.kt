@@ -43,7 +43,7 @@ class VideoPlayerView
         defStyleAttr: Int = 0,
     ) : PlayerView(context.applicationContext, attrs, defStyleAttr),
         Player.Listener {
-        private val exoPlayer: ExoPlayer
+        private lateinit var exoPlayer: ExoPlayer
         private var state = VideoState()
 
         private var listener: OnVideoPlayerEventListener? = null
@@ -65,8 +65,8 @@ class VideoPlayerView
         private var wasPlaying = false
         private val volumeHelper =
             VolumeHelper(
-                getVolume = { exoPlayer.volume },
-                setVolume = { v -> exoPlayer.volume = v },
+                getVolume = { if (::exoPlayer.isInitialized) exoPlayer.volume else 1f },
+                setVolume = { v -> if (::exoPlayer.isInitialized) exoPlayer.volume = v },
             )
         private var forcedMuted = false
 
@@ -76,9 +76,14 @@ class VideoPlayerView
         private var isMuted = !GeneralPrefs.playsVideoAudio
 
         init {
-            // Use applicationContext to prevent activity context leaks
-            exoPlayer = VideoPlayerHelper.buildPlayer(context, GeneralPrefs)
+            controllerAutoShow = false
+            useController = false
+        }
 
+        private fun ensurePlayerInitialized() {
+            if (::exoPlayer.isInitialized) return
+
+            exoPlayer = VideoPlayerHelper.buildPlayer(context.applicationContext, GeneralPrefs)
             player = exoPlayer
             player?.addListener(this)
 
@@ -88,9 +93,12 @@ class VideoPlayerView
                 player?.repeatMode = Player.REPEAT_MODE_OFF
             }
 
-            controllerAutoShow = false
-            useController = false
             resizeMode = VideoPlayerHelper.getResizeMode(GeneralPrefs.videoScale)
+        }
+
+        override fun onDetachedFromWindow() {
+            super.onDetachedFromWindow()
+            release()
         }
 
         fun release() {
@@ -98,12 +106,12 @@ class VideoPlayerView
 
             Timber.i("Releasing VideoPlayerView...")
             isDestroyed = true
-            pause()
-            exoPlayer.setVideoSurface(null)
-            // Release ExoPlayer to stop internal threads
-            // exoPlayer.release()
-            player?.release()
-            // Clear surface view to break context reference chain
+            if (::exoPlayer.isInitialized) {
+                pause()
+                exoPlayer.removeListener(this)
+                exoPlayer.clearVideoSurface()
+                exoPlayer.release()
+            }
             player = null
             // Cancel coroutine scope to prevent lambda callbacks from leaking
             mainScope.cancel()
@@ -118,6 +126,7 @@ class VideoPlayerView
 
         fun toggleLooping() {
             if (isDestroyed) return
+            ensurePlayerInitialized()
 
             GeneralPrefs.loopUntilSkipped = !GeneralPrefs.loopUntilSkipped
 
@@ -145,6 +154,10 @@ class VideoPlayerView
         }
 
         fun setVideo(media: AerialMedia) {
+            ensurePlayerInitialized()
+            removeCallbacks(almostFinishedRunnable)
+            removeCallbacks(onErrorRunnable)
+            exoPlayer.stop()
             state = VideoState() // Reset params for each video
             state.type = media.source
             cancelVolumeFade()
@@ -163,6 +176,7 @@ class VideoPlayerView
         }
 
         fun setForcedMute(enabled: Boolean) {
+            ensurePlayerInitialized()
             forcedMuted = enabled
             applyMuteState()
         }
@@ -176,6 +190,7 @@ class VideoPlayerView
         fun seekBackward() = seek(true)
 
         fun toggleMute() {
+            ensurePlayerInitialized()
             cancelVolumeFade()
             if (forcedMuted || !GeneralPrefs.playsVideoAudio) {
                 applyMuteState()
@@ -221,10 +236,12 @@ class VideoPlayerView
         }
 
         fun start() {
+            ensurePlayerInitialized()
             exoPlayer.playWhenReady = true
         }
 
         fun pause() {
+            if (!::exoPlayer.isInitialized) return
             wasPlaying = exoPlayer.playWhenReady
             exoPlayer.playWhenReady = false
             pausedTimestamp = System.currentTimeMillis()
@@ -232,6 +249,7 @@ class VideoPlayerView
         }
 
         fun resume() {
+            if (!::exoPlayer.isInitialized) return
             if (wasPlaying) {
                 exoPlayer.playWhenReady = true
                 // Recalculate remaining time and restart timer
@@ -240,12 +258,13 @@ class VideoPlayerView
         }
 
         fun stop() {
+            if (!::exoPlayer.isInitialized) return
             removeCallbacks(almostFinishedRunnable)
             exoPlayer.stop()
         }
 
         val currentPosition
-            get() = exoPlayer.currentPosition.toInt()
+            get() = if (::exoPlayer.isInitialized) exoPlayer.currentPosition.toInt() else 0
 
         @OptIn(UnstableApi::class)
         override fun onPlaybackStateChanged(playbackState: Int) {
@@ -375,6 +394,7 @@ class VideoPlayerView
         }
 
         private fun seek(backward: Boolean = false) {
+            ensurePlayerInitialized()
             val interval = GeneralPrefs.seekInterval.toLong() * 1000
             val position = exoPlayer.currentPosition
 
@@ -388,6 +408,7 @@ class VideoPlayerView
         }
 
         private fun changeSpeed(increase: Boolean) {
+            ensurePlayerInitialized()
             if (!canChangePlaybackSpeed) return
             if (!exoPlayer.playWhenReady || !exoPlayer.isPlaying) return // Must be playing a video
             if (exoPlayer.currentPosition <= CHANGE_PLAYBACK_START_END_DELAY) return // No speed change at the start of the video
