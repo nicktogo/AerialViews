@@ -249,6 +249,13 @@ class ScreenController(
                 ktorServer =
                     KtorServer(context) { messageEvent ->
                         GlobalBus.post(messageEvent)
+                        when (messageEvent.type) {
+                            OverlayType.MESSAGE1 -> GeneralPrefs.messageLine1 = messageEvent.text
+                            OverlayType.MESSAGE2 -> GeneralPrefs.messageLine2 = messageEvent.text
+                            OverlayType.MESSAGE3 -> GeneralPrefs.messageLine3 = messageEvent.text
+                            OverlayType.MESSAGE4 -> GeneralPrefs.messageLine4 = messageEvent.text
+                            else -> {}
+                        }
                     }.apply {
                         start()
                     }
