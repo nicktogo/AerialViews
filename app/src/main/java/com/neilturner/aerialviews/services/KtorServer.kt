@@ -110,6 +110,20 @@ class KtorServer(
                 }
                 handleMessageRequest(call, messageNumber)
             }
+
+            post("/fetch-config") {
+                handleSetFetchConfig(call)
+            }
+
+            get("/fetch-config") {
+                call.respond(
+                    HttpStatusCode.OK,
+                    FetchConfigResponse(
+                        url = GeneralPrefs.messageFetchUrl,
+                        intervalMinutes = GeneralPrefs.messageFetchIntervalMinutes.toIntOrNull() ?: 60,
+                    ),
+                )
+            }
         }
     }
 
@@ -184,6 +198,28 @@ class KtorServer(
     private fun Application.configurePlugins() {
         install(ContentNegotiation) { json(JsonHelper.json) }
     }
+
+    private suspend fun handleSetFetchConfig(call: ApplicationCall) {
+        try {
+            val request = call.receive<FetchConfigRequest>()
+
+            if (request.url == null) {
+                call.respond(HttpStatusCode.BadRequest, ErrorResponse(error = "Required parameter 'url' is missing."))
+                return
+            }
+
+            GeneralPrefs.messageFetchUrl = request.url
+            val interval = request.intervalMinutes ?: 60
+            GeneralPrefs.messageFetchIntervalMinutes = interval.toString()
+
+            Timber.i("Fetch config updated - URL: '${request.url}', interval: ${interval}m")
+
+            call.respond(HttpStatusCode.OK, SuccessResponse(message = "Fetch config updated"))
+        } catch (e: Exception) {
+            Timber.e(e, "Error processing fetch-config request")
+            call.respond(HttpStatusCode.InternalServerError, ErrorResponse(error = "An internal server error occurred."))
+        }
+    }
 }
 
 @Serializable
@@ -212,4 +248,16 @@ data class MessageEvent(
     val duration: Int? = null,
     val textSize: Int? = null,
     val textWeight: Int? = null,
+)
+
+@Serializable
+data class FetchConfigRequest(
+    val url: String?,
+    val intervalMinutes: Int? = null,
+)
+
+@Serializable
+data class FetchConfigResponse(
+    val url: String,
+    val intervalMinutes: Int,
 )

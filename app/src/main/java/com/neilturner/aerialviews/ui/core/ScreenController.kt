@@ -30,6 +30,8 @@ import com.neilturner.aerialviews.models.prefs.GeneralPrefs
 import com.neilturner.aerialviews.models.videos.AerialMedia
 import com.neilturner.aerialviews.services.KtorServer
 import com.neilturner.aerialviews.services.MediaService
+import com.neilturner.aerialviews.services.MessageEvent
+import com.neilturner.aerialviews.services.MessageFetchService
 import com.neilturner.aerialviews.services.MusicPlayer
 import com.neilturner.aerialviews.services.NowPlayingService
 import com.neilturner.aerialviews.services.weather.WeatherService
@@ -80,6 +82,7 @@ class ScreenController(
     private var nowPlayingService: NowPlayingService? = null
     private var weatherService: WeatherService? = null
     private var ktorServer: KtorServer? = null
+    private var messageFetchService: MessageFetchService? = null
     private var musicPlayer: MusicPlayer? = null
     private val overlayStateStore = OverlayStateStore()
     private val overlayEventBridge = OverlayEventBridge(overlayStateStore)
@@ -249,13 +252,17 @@ class ScreenController(
                 ktorServer =
                     KtorServer(context) { messageEvent ->
                         GlobalBus.post(messageEvent)
-                        when (messageEvent.type) {
-                            OverlayType.MESSAGE1 -> GeneralPrefs.messageLine1 = messageEvent.text
-                            OverlayType.MESSAGE2 -> GeneralPrefs.messageLine2 = messageEvent.text
-                            OverlayType.MESSAGE3 -> GeneralPrefs.messageLine3 = messageEvent.text
-                            OverlayType.MESSAGE4 -> GeneralPrefs.messageLine4 = messageEvent.text
-                            else -> {}
-                        }
+                        persistMessageEvent(messageEvent)
+                    }.apply {
+                        start()
+                    }
+            }
+
+            if (overlayHelper.findOverlay<MessageOverlay>().isNotEmpty() && GeneralPrefs.messageFetchUrl.isNotBlank()) {
+                messageFetchService =
+                    MessageFetchService { messageEvent ->
+                        GlobalBus.post(messageEvent)
+                        persistMessageEvent(messageEvent)
                     }.apply {
                         start()
                     }
@@ -677,6 +684,7 @@ class ScreenController(
         videoPlayer.release()
         imagePlayer.release()
         ktorServer?.stop()
+        messageFetchService?.stop()
         nowPlayingService?.stop()
         weatherService?.stop()
         musicPlayer?.pause()
@@ -685,6 +693,28 @@ class ScreenController(
         metadataJobs.values.forEach { it.cancel() }
         metadataJobs.clear()
         mainScope.cancel()
+    }
+
+    private fun persistMessageEvent(messageEvent: MessageEvent) {
+        when (messageEvent.type) {
+            OverlayType.MESSAGE1 -> {
+                GeneralPrefs.messageLine1 = messageEvent.text
+            }
+
+            OverlayType.MESSAGE2 -> {
+                GeneralPrefs.messageLine2 = messageEvent.text
+            }
+
+            OverlayType.MESSAGE3 -> {
+                GeneralPrefs.messageLine3 = messageEvent.text
+            }
+
+            OverlayType.MESSAGE4 -> {
+                GeneralPrefs.messageLine4 = messageEvent.text
+            }
+
+            else -> {}
+        }
     }
 
     fun skipItem(previous: Boolean = false) {

@@ -139,6 +139,9 @@ object GeneralPrefs : KotprefModel() {
     var messageApiEnabled by booleanPref(false, "message_api_enabled")
     var messageApiPort by stringPref("8081", "message_api_port")
 
+    var messageFetchUrl by stringPref("", "message_fetch_url")
+    var messageFetchIntervalMinutes by stringPref("60", "message_fetch_interval_minutes")
+
     // Countdown
     var countdownTargetTime by stringPref("", "countdown_target_time")
     var countdownTargetMessage by stringPref("", "countdown_target_message")
